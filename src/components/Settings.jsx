@@ -3,6 +3,7 @@ import { auth, provider, db } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { User, Mail, Save, LogOut } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -44,6 +45,9 @@ export default function Settings() {
 
   const handleLogout = async () => {
     await signOut(auth);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    localStorage.removeItem(`attendance_${today}`);
+    window.location.reload();
   };
 
   const handleSaveProfile = async (e) => {
