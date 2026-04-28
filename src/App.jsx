@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import DashboardLayout from './components/DashboardLayout'
 import WelcomeScreen from './components/WelcomeScreen'
-import { auth } from './firebase'
+import { auth, db } from './firebase'
 import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 
 function App() {
   const [showWelcome, setShowWelcome] = useState(true);
@@ -12,19 +13,35 @@ function App() {
   const [authResolved, setAuthResolved] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthResolved(true);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
-    const attendance = localStorage.getItem(`attendance_${today}`);
-    if (attendance) {
+    
+    // Check local memory first
+    const localAttendance = localStorage.getItem(`attendance_${today}`);
+    if (localAttendance) {
       setHasAttended(true);
     }
+
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      
+      // If logged in but local memory is empty, fetch from cloud for cross-device sync
+      if (currentUser && !localAttendance) {
+        try {
+          const attendanceRef = doc(db, 'users', currentUser.uid, 'attendance', today);
+          const attSnap = await getDoc(attendanceRef);
+          if (attSnap.exists() && attSnap.data().mood) {
+            localStorage.setItem(`attendance_${today}`, attSnap.data().mood);
+            setHasAttended(true);
+          }
+        } catch (error) {
+          console.error("Failed to sync attendance:", error);
+        }
+      }
+      
+      setAuthResolved(true);
+    });
+    
+    return unsubscribe;
   }, []);
 
   if (!authResolved) {
