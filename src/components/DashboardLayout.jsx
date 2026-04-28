@@ -8,7 +8,8 @@ import {
   LogIn,
   CalendarDays,
   BarChart3,
-  ShieldAlert
+  ShieldAlert,
+  Menu
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { auth, db, provider } from '../firebase';
@@ -26,6 +27,7 @@ export default function DashboardLayout() {
   const [currentDate] = useState(new Date()); 
   const [activeView, setActiveView] = useState('dashboard');
   const [user, setUser] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   // Real State Engine (Syncs with Firebase)
   const [trackerData, setTrackerData] = useState({});
@@ -118,8 +120,14 @@ export default function DashboardLayout() {
 
   return (
     <div className="app-container mode-coding"> {/* Mode class can be dynamic later */}
+      {/* Mobile Overlay */}
+      <div 
+        className={`mobile-overlay ${isSidebarOpen ? 'open' : ''}`} 
+        onClick={() => setIsSidebarOpen(false)} 
+      />
+
       {/* Sidebar */}
-      <aside className="sidebar glass-panel">
+      <aside className={`sidebar glass-panel ${isSidebarOpen ? 'open' : ''}`}>
         <div className="flex-col gap-6">
           <div className="flex-row items-center gap-2">
             <div className="flex-row items-center justify-center" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--current-accent)' }}>
@@ -133,7 +141,7 @@ export default function DashboardLayout() {
           <nav className="flex-col gap-2" style={{ marginTop: '32px' }}>
             <button 
               className="btn" 
-              onClick={() => setActiveView('dashboard')}
+              onClick={() => { setActiveView('dashboard'); setIsSidebarOpen(false); }}
               style={{ background: activeView === 'dashboard' ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderColor: activeView === 'dashboard' ? 'var(--current-accent)' : 'var(--border-glass)' }}
             >
               <CalendarDays size={20} />
@@ -141,7 +149,7 @@ export default function DashboardLayout() {
             </button>
             <button 
               className="btn"
-              onClick={() => setActiveView('analytics')}
+              onClick={() => { setActiveView('analytics'); setIsSidebarOpen(false); }}
               style={{ background: activeView === 'analytics' ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderColor: activeView === 'analytics' ? 'var(--current-accent)' : 'var(--border-glass)' }}
             >
               <BarChart3 size={20} />
@@ -149,7 +157,7 @@ export default function DashboardLayout() {
             </button>
             <button 
               className="btn"
-              onClick={() => setActiveView('blockers')}
+              onClick={() => { setActiveView('blockers'); setIsSidebarOpen(false); }}
               style={{ background: activeView === 'blockers' ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderColor: activeView === 'blockers' ? 'var(--current-accent)' : 'var(--border-glass)' }}
             >
               <ShieldAlert size={20} />
@@ -157,7 +165,7 @@ export default function DashboardLayout() {
             </button>
             <button 
               className="btn"
-              onClick={() => setActiveView('settings')}
+              onClick={() => { setActiveView('settings'); setIsSidebarOpen(false); }}
               style={{ background: activeView === 'settings' ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderColor: activeView === 'settings' ? 'var(--current-accent)' : 'var(--border-glass)' }}
             >
               <Settings size={20} />
@@ -190,14 +198,19 @@ export default function DashboardLayout() {
       {/* Main Content */}
       <main className="main-content">
         <header className="flex-row justify-between items-center glass-panel" style={{ padding: '16px 24px' }}>
-          <div className="flex-col">
-            <h1 className="text-h2">
-              {activeView === 'dashboard' && 'Daily Execution'}
-              {activeView === 'analytics' && 'Performance Analytics'}
-              {activeView === 'blockers' && 'Pending Tasks'}
-              {activeView === 'settings' && 'Account Settings'}
-            </h1>
-            <p className="text-muted">{format(currentDate, 'EEEE, MMMM do, yyyy')}</p>
+          <div className="flex-row items-center gap-4">
+            <button className="mobile-menu-btn" onClick={() => setIsSidebarOpen(true)}>
+              <Menu size={24} />
+            </button>
+            <div className="flex-col">
+              <h1 className="text-h2">
+                {activeView === 'dashboard' && 'Daily Execution'}
+                {activeView === 'analytics' && 'Performance Analytics'}
+                {activeView === 'blockers' && 'Pending Tasks'}
+                {activeView === 'settings' && 'Account Settings'}
+              </h1>
+              <p className="text-muted">{format(currentDate, 'EEEE, MMMM do, yyyy')}</p>
+            </div>
           </div>
           <div className="flex-row items-center gap-4">
             <button 

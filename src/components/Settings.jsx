@@ -132,7 +132,7 @@ export default function Settings() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="settings-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="flex-col gap-2">
                   <label className="text-muted text-small">Current College</label>
                   <input 

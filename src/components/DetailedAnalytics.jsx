@@ -68,7 +68,7 @@ export default function DetailedAnalytics({ trackerData }) {
     <div className="flex-col gap-6 animate-fade-in">
       
       {/* Streaks Header */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+      <div className="analytics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         <div className="glass-panel" style={{ padding: '20px', textAlign: 'center', borderColor: 'var(--accent-coding)' }}>
           <div className="text-muted">Current Attendance</div>
           <div className="glow-text" style={{ fontSize: '2rem', fontWeight: 'bold' }}>{streaks.currentAttendance} <span style={{fontSize:'1rem'}}>Days</span></div>

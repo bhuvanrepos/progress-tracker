@@ -54,7 +54,7 @@ export default function WelcomeScreen({ hasAttended, user, onComplete }) {
   if (step === 1) {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px' }} className="animate-fade-in">
-        <h1 style={{ 
+        <h1 className="welcome-title" style={{ 
           fontFamily: "'Dancing Script', cursive", 
           fontSize: '3.5rem', 
           lineHeight: '1.4',
@@ -109,7 +109,7 @@ export default function WelcomeScreen({ hasAttended, user, onComplete }) {
       <h2 className="text-h1" style={{ marginBottom: '16px' }}>What is your mood today?</h2>
       <p className="text-muted" style={{ marginBottom: '40px' }}>Select how you're feeling to mark today's attendance.</p>
       
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div className="mood-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
         {[
           { emoji: '🚀', label: 'Highly Motivated' },
           { emoji: '😊', label: 'Good' },
