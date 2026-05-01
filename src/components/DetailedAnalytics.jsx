@@ -84,8 +84,8 @@ export default function DetailedAnalytics({ trackerData }) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div style={{ padding: '16px', background: 'rgba(10, 14, 20, 0.95)', border: '1px solid var(--border-glass)', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', minWidth: '200px' }}>
-          <p style={{ margin: '0 0 12px 0', fontWeight: 'bold', fontSize: '1.1rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>{label}</p>
+        <div style={{ padding: '16px', background: 'rgba(10, 14, 20, 0.95)', border: '1px solid var(--border-glass)', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', minWidth: '200px', maxHeight: '300px', overflowY: 'auto' }}>
+          <p style={{ margin: '0 0 12px 0', fontWeight: 'bold', fontSize: '1.1rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px', position: 'sticky', top: 0, background: 'rgba(10, 14, 20, 0.95)', zIndex: 2 }}>{label}</p>
           <p style={{ color: '#10b981', margin: '0 0 4px 0', fontWeight: '500' }}>Completion: {data.completion}%</p>
           
           {data.blockers?.length > 0 && (
