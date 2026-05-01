@@ -86,7 +86,7 @@ export default function DetailedAnalytics({ trackerData }) {
       return (
         <div style={{ padding: '16px', background: 'rgba(10, 14, 20, 0.95)', border: '1px solid var(--border-glass)', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', minWidth: '200px' }}>
           <p style={{ margin: '0 0 12px 0', fontWeight: 'bold', fontSize: '1.1rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>{label}</p>
-          <p style={{ color: '#ef4444', margin: '0 0 4px 0', fontWeight: '500' }}>Completion: {data.completion}%</p>
+          <p style={{ color: '#10b981', margin: '0 0 4px 0', fontWeight: '500' }}>Completion: {data.completion}%</p>
           
           {data.blockers?.length > 0 && (
             <div style={{ marginTop: '16px' }}>
@@ -99,7 +99,7 @@ export default function DetailedAnalytics({ trackerData }) {
                   <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Task : {b.text}</div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Topic : {b.topic || 'N/A'}</div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Actual date of task : {format(new Date(b.originalDate), 'MMM do')}</div>
-                  <div style={{ color: '#10b981', fontSize: '0.85rem' }}>Status : Completed</div>
+                  <div style={{ color: '#eab308', fontSize: '0.85rem' }}>Status : Completed</div>
                 </div>
               ))}
             </div>

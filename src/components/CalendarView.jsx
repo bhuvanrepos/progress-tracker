@@ -581,7 +581,7 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
                                     </span>
                                     {task.isRollover && (
                                       <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px' }}>
-                                        ⚠️ Carried over from {format(new Date(task.originalDate), 'MMM do')}
+                                        ⚠️ Warning: Task from {format(new Date(task.originalDate), 'MMM do')}
                                       </span>
                                     )}
                                     {task.type === 'video' && task.link && (
@@ -649,7 +649,7 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
                                     </span>
                                     {task.isRollover && (
                                       <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px' }}>
-                                        ⚠️ Carried over from {format(new Date(task.originalDate), 'MMM do')}
+                                        ⚠️ Warning: Task from {format(new Date(task.originalDate), 'MMM do')}
                                       </span>
                                     )}
                                     {task.type === 'video' && task.link && (

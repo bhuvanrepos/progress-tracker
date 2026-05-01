@@ -56,9 +56,9 @@ export default function DashboardLayout() {
         
         // MOCK DATA INJECTION FOR UNCOMPLETED BLOCKER (from April 29th)
         if (!loadedData['2026-04-29']) loadedData['2026-04-29'] = { tasks: [] };
-        if (!loadedData['2026-04-29'].tasks.find(t => t.id === 'mock-g2')) {
+        if (!loadedData['2026-04-29'].tasks.find(t => t.id === 'mock-g2-retry')) {
           loadedData['2026-04-29'].tasks.push({
-            id: 'mock-g2', text: 'g2', type: 'task', duration: '02h00m00s', topic: 'optional', completed: false, originalDate: '2026-04-29'
+            id: 'mock-g2-retry', text: 'g2', type: 'task', duration: '02h00m00s', topic: 'optional', completed: false, originalDate: '2026-04-29'
           });
         }
         
@@ -74,7 +74,7 @@ export default function DashboardLayout() {
           },
           '2026-04-29': {
              tasks: [
-               { id: 'mock-g2', text: 'g2', type: 'task', duration: '02h00m00s', topic: 'optional', completed: false, originalDate: '2026-04-29' }
+               { id: 'mock-g2-retry', text: 'g2', type: 'task', duration: '02h00m00s', topic: 'optional', completed: false, originalDate: '2026-04-29' }
              ]
           }
         });
