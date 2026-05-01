@@ -5,7 +5,8 @@ import ClockPicker from './ClockPicker';
 
 export default function CalendarView({ trackerData, updateTrackerData, user, handleLogin }) {
   const may2026 = new Date('2026-05-01T00:00:00');
-  const [selectedDate, setSelectedDate] = useState(may2026);
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(today);
   
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const dayData = trackerData[dateStr] || { mood: null, topics: { required: '', optional: '' }, tasks: [] };
