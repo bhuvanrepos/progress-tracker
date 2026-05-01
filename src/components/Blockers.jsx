@@ -28,9 +28,10 @@ export default function Blockers({ trackerData, updateTrackerData, currentDate }
   pendingTasks.sort((a, b) => parseISO(a.originalDateStr).getTime() - parseISO(b.originalDateStr).getTime());
 
   const markComplete = (taskId, dateStr) => {
+    const todayStr = format(currentDate, 'yyyy-MM-dd');
     const dayData = trackerData[dateStr] || { tasks: [] };
     const dayTasks = dayData.tasks || [];
-    const updated = dayTasks.map(t => t.id === taskId ? { ...t, completed: true } : t);
+    const updated = dayTasks.map(t => t.id === taskId ? { ...t, completed: true, completedDate: todayStr } : t);
     updateTrackerData(dateStr, { ...dayData, tasks: updated });
   };
 

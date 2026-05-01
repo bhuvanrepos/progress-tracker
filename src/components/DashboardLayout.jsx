@@ -48,17 +48,17 @@ export default function DashboardLayout() {
         
         // MOCK DATA INJECTION FOR MAY 1st BLOCKER (from April 30th)
         if (!loadedData['2026-04-30']) loadedData['2026-04-30'] = { tasks: [] };
-        // Check if it already exists to prevent duplicates on multiple loads
         if (!loadedData['2026-04-30'].tasks.find(t => t.id === 'mock-g1')) {
           loadedData['2026-04-30'].tasks.push({
-            id: 'mock-g1',
-            text: 'g1',
-            type: 'task',
-            duration: '01h00m00s',
-            topic: 'required',
-            completed: true,
-            completedDate: '2026-05-01',
-            originalDate: '2026-04-30'
+            id: 'mock-g1', text: 'g1', type: 'task', duration: '01h00m00s', topic: 'required', completed: true, completedDate: '2026-05-01', originalDate: '2026-04-30'
+          });
+        }
+        
+        // MOCK DATA INJECTION FOR UNCOMPLETED BLOCKER (from April 29th)
+        if (!loadedData['2026-04-29']) loadedData['2026-04-29'] = { tasks: [] };
+        if (!loadedData['2026-04-29'].tasks.find(t => t.id === 'mock-g2')) {
+          loadedData['2026-04-29'].tasks.push({
+            id: 'mock-g2', text: 'g2', type: 'task', duration: '02h00m00s', topic: 'optional', completed: false, originalDate: '2026-04-29'
           });
         }
         
@@ -70,6 +70,11 @@ export default function DashboardLayout() {
           '2026-04-30': {
              tasks: [
                { id: 'mock-g1', text: 'g1', type: 'task', duration: '01h00m00s', topic: 'required', completed: true, completedDate: '2026-05-01', originalDate: '2026-04-30' }
+             ]
+          },
+          '2026-04-29': {
+             tasks: [
+               { id: 'mock-g2', text: 'g2', type: 'task', duration: '02h00m00s', topic: 'optional', completed: false, originalDate: '2026-04-29' }
              ]
           }
         });

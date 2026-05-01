@@ -97,7 +97,8 @@ export default function DetailedAnalytics({ trackerData }) {
               {data.blockers.map(b => (
                 <div key={b.id} style={{ background: 'rgba(0,0,0,0.3)', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: '3px solid #3b82f6' }}>
                   <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Task : {b.text}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Actual task issued date : {format(new Date(b.originalDate), 'MMM do')}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Topic : {b.topic || 'N/A'}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Actual date of task : {format(new Date(b.originalDate), 'MMM do')}</div>
                   <div style={{ color: '#10b981', fontSize: '0.85rem' }}>Status : Completed</div>
                 </div>
               ))}
