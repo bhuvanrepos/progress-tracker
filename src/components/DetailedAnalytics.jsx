@@ -21,7 +21,7 @@ export default function DetailedAnalytics({ trackerData }) {
 
     days.forEach(day => {
       const dateStr = format(day, 'yyyy-MM-dd');
-      const tasks = trackerData[dateStr] || [];
+      const tasks = trackerData[dateStr]?.tasks || [];
       const total = tasks.length;
       const completedCount = tasks.filter(t => t.completed).length;
       const notCompletedCount = total - completedCount;

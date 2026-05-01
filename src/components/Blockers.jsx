@@ -11,7 +11,7 @@ export default function Blockers({ trackerData, updateTrackerData, currentDate }
     const dateObj = parseISO(dateStr);
     // If the task date is strictly before today
     if (isBefore(startOfDay(dateObj), startOfDay(currentDate))) {
-      const tasks = trackerData[dateStr];
+      const tasks = trackerData[dateStr]?.tasks;
       tasks.forEach(task => {
         if (!task.completed) {
           pendingTasks.push({
@@ -28,9 +28,10 @@ export default function Blockers({ trackerData, updateTrackerData, currentDate }
   pendingTasks.sort((a, b) => parseISO(a.originalDateStr).getTime() - parseISO(b.originalDateStr).getTime());
 
   const markComplete = (taskId, dateStr) => {
-    const dayTasks = trackerData[dateStr];
+    const dayData = trackerData[dateStr] || { tasks: [] };
+    const dayTasks = dayData.tasks || [];
     const updated = dayTasks.map(t => t.id === taskId ? { ...t, completed: true } : t);
-    updateTrackerData(dateStr, updated);
+    updateTrackerData(dateStr, { ...dayData, tasks: updated });
   };
 
   return (

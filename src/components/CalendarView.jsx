@@ -1,85 +1,84 @@
-import React, { useState } from 'react';
-import { format, startOfMonth, getDaysInMonth, addDays, getDay } from 'date-fns';
-import { PlusCircle, Link as LinkIcon, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { format, getDaysInMonth, addDays, getDay } from 'date-fns';
+import { PlusCircle, Link as LinkIcon, Clock, Video, ListTodo, Save } from 'lucide-react';
 
 export default function CalendarView({ trackerData, updateTrackerData }) {
   // Phase 1 constraints: May 2026
   const may2026 = new Date('2026-05-01T00:00:00');
   const [selectedDate, setSelectedDate] = useState(may2026);
   
-  // Form State
-  const [subject1, setSubject1] = useState('');
-  const [subject2, setSubject2] = useState('');
-  const [taskDuration, setTaskDuration] = useState('1h');
-  const [taskLink, setTaskLink] = useState('');
-
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
-  const dayOfWeek = getDay(selectedDate);
-  const tasksForDay = trackerData[dateStr] || [];
+  const dayData = trackerData[dateStr] || { mood: null, topics: { required: '', optional: '' }, tasks: [] };
+  const tasksForDay = dayData.tasks || [];
+  
+  // Topic Setup State
+  const [topicReq, setTopicReq] = useState('');
+  const [topicOpt, setTopicOpt] = useState('');
 
-  // Logic for Dynamic Form labels based on day
-  let modeLabel = 'Revision Day';
-  let headerLabel = "Today's Revision";
-  let sub1Placeholder = 'Primary Revision Topic (Required)';
-  let sub2Placeholder = 'Secondary Revision Topic (Optional)';
+  // Sync local topic state when changing days
+  useEffect(() => {
+    setTopicReq(dayData.topics?.required || '');
+    setTopicOpt(dayData.topics?.optional || '');
+  }, [dateStr, trackerData]);
 
-  if (dayOfWeek >= 1 && dayOfWeek <= 3) {
-    modeLabel = 'Coding & Web Dev';
-    headerLabel = "Today's Learning Language";
-    sub1Placeholder = 'Primary Language / Topic (Required)';
-    sub2Placeholder = 'Secondary Language / Topic (Optional)';
-  } else if (dayOfWeek >= 4 && dayOfWeek <= 6) {
-    modeLabel = 'GATE Prep';
-    headerLabel = "Today's GATE Prep";
-    sub1Placeholder = 'Required GATE Subject / Topic';
-    sub2Placeholder = 'Optional GATE Subject / Topic';
-  }
+  // Builder State
+  const [activeTab, setActiveTab] = useState('task'); // 'task' or 'video'
+  const [itemName, setItemName] = useState('');
+  const [itemDuration, setItemDuration] = useState('1h');
+  const [selectedTopic, setSelectedTopic] = useState('required');
 
-  const handleAddTask = (e) => {
+  const moods = [
+    { emoji: '🚀', label: 'Highly Motivated' },
+    { emoji: '😊', label: 'Good' },
+    { emoji: '😐', label: 'Neutral' },
+    { emoji: '😫', label: 'Tired' },
+    { emoji: '🌧️', label: 'Struggling' }
+  ];
+
+  const handleMoodSelect = (moodLabel) => {
+    updateTrackerData(dateStr, { ...dayData, mood: moodLabel });
+  };
+
+  const handleSaveTopics = (e) => {
     e.preventDefault();
-    if (!subject1) return; // Subject 1 is required
+    updateTrackerData(dateStr, { ...dayData, topics: { required: topicReq, optional: topicOpt } });
+  };
 
-    const newTasks = [];
-    const baseId = Date.now().toString();
-
-    // Create task for Subject 1
-    newTasks.push({
-      id: baseId + '-1',
-      text: subject1,
-      duration: taskDuration,
-      link: taskLink,
-      completed: false,
-      type: modeLabel,
-      isOptional: false
-    });
-
-    // Create task for Subject 2 if provided
-    if (subject2.trim() !== '') {
-      newTasks.push({
-        id: baseId + '-2',
-        text: subject2,
-        duration: taskDuration,
-        link: taskLink,
-        completed: false,
-        type: modeLabel,
-        isOptional: true
-      });
+  const handleAddItem = (e) => {
+    e.preventDefault();
+    if (!itemName) return;
+    
+    if (selectedTopic === 'required' && !dayData.topics?.required) {
+      alert("Please define and save a Required Topic first.");
+      return;
+    }
+    if (selectedTopic === 'optional' && !dayData.topics?.optional) {
+      alert("Please define and save an Optional Topic first.");
+      return;
     }
 
-    updateTrackerData(dateStr, [...tasksForDay, ...newTasks]);
-    setSubject1('');
-    setSubject2('');
-    setTaskLink('');
+    const newItem = {
+      id: Date.now().toString(),
+      type: activeTab,
+      text: activeTab === 'task' ? itemName : '',
+      link: activeTab === 'video' ? itemName : '',
+      duration: itemDuration,
+      topic: selectedTopic,
+      completed: false
+    };
+
+    updateTrackerData(dateStr, { ...dayData, tasks: [...tasksForDay, newItem] });
+    setItemName('');
   };
 
   const toggleTask = (taskId) => {
     const updated = tasksForDay.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t);
-    updateTrackerData(dateStr, updated);
+    updateTrackerData(dateStr, { ...dayData, tasks: updated });
   };
 
   const removeTask = (taskId) => {
     const updated = tasksForDay.filter(t => t.id !== taskId);
-    updateTrackerData(dateStr, updated);
+    updateTrackerData(dateStr, { ...dayData, tasks: updated });
   };
 
   // Generate Calendar Days
@@ -94,9 +93,14 @@ export default function CalendarView({ trackerData, updateTrackerData }) {
     };
   });
 
+  // Group tasks for rendering
+  const requiredTasks = tasksForDay.filter(t => t.topic === 'required');
+  const optionalTasks = tasksForDay.filter(t => t.topic === 'optional');
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-      {/* Calendar Grid & Selected Day Info */}
+      
+      {/* LEFT COLUMN: Calendar & Mood */}
       <div className="flex-col gap-6">
         <div className="glass-panel animate-fade-in" style={{ padding: '24px' }}>
           <h2 className="text-h2" style={{ marginBottom: '16px' }}>May 2026</h2>
@@ -106,13 +110,11 @@ export default function CalendarView({ trackerData, updateTrackerData }) {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-            {/* Empty slots for offset (May 1 2026 is a Friday = index 5) */}
             {Array.from({ length: 5 }).map((_, i) => <div key={`empty-${i}`} />)}
-            
             {calendarDays.map((d, i) => {
               const isSelected = dateStr === d.dateStr;
-              const hasTasks = trackerData[d.dateStr]?.length > 0;
-              const allDone = hasTasks && trackerData[d.dateStr].every(t => t.completed);
+              const hasTasks = trackerData[d.dateStr]?.tasks?.length > 0;
+              const allDone = hasTasks && trackerData[d.dateStr].tasks.every(t => t.completed);
               
               return (
                 <button
@@ -143,36 +145,110 @@ export default function CalendarView({ trackerData, updateTrackerData }) {
           </div>
         </div>
 
+        {/* MOOD TRACKER */}
+        <div className="glass-panel" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <h3 className="text-h3">Today's Mood</h3>
+            {dayData.mood && <span style={{ fontSize: '0.8rem', color: 'var(--current-accent)' }}>Saved!</span>}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+            {moods.map((m) => (
+              <button
+                key={m.label}
+                onClick={() => handleMoodSelect(m.label)}
+                title={m.label}
+                style={{
+                  fontSize: '1.8rem',
+                  padding: '8px',
+                  background: dayData.mood === m.label ? 'rgba(6, 182, 212, 0.2)' : 'transparent',
+                  border: dayData.mood === m.label ? '1px solid var(--current-accent)' : '1px solid transparent',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  transform: dayData.mood === m.label ? 'scale(1.1)' : 'scale(1)'
+                }}
+              >
+                {m.emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: Builder & Tasks */}
+      <div className="flex-col gap-6">
+        
+        {/* TOPIC SETUP */}
         <div className="glass-panel" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <h3 className="text-h3" style={{ color: 'var(--current-accent)' }}>{headerLabel}</h3>
+            <h3 className="text-h3" style={{ color: 'var(--current-accent)' }}>Topic Definition</h3>
             <span style={{ fontSize: '0.8rem', padding: '4px 8px', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>{format(selectedDate, 'MMM do')}</span>
           </div>
 
-          <form onSubmit={handleAddTask} className="flex-col gap-4">
+          <form onSubmit={handleSaveTopics} className="flex-col gap-4">
             <input 
               type="text" 
-              placeholder={sub1Placeholder}
-              value={subject1}
-              onChange={(e) => setSubject1(e.target.value)}
+              placeholder="Required GATE Subject / Topic"
+              value={topicReq}
+              onChange={(e) => setTopicReq(e.target.value)}
               style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none' }}
               required
             />
-
             <input 
               type="text" 
-              placeholder={sub2Placeholder}
-              value={subject2}
-              onChange={(e) => setSubject2(e.target.value)}
+              placeholder="Optional GATE Subject / Topic"
+              value={topicOpt}
+              onChange={(e) => setTopicOpt(e.target.value)}
               style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+            />
+            <button type="submit" className="btn" style={{ justifyContent: 'center', border: '1px solid var(--current-accent)', color: 'var(--current-accent)' }}>
+              <Save size={18} /> Save Topics
+            </button>
+          </form>
+        </div>
+
+        {/* TASK / VIDEO BUILDER */}
+        <div className="glass-panel" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <button 
+              onClick={() => setActiveTab('task')}
+              style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: activeTab === 'task' ? 'var(--current-accent)' : 'rgba(255,255,255,0.05)', color: activeTab === 'task' ? '#000' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+            >
+              <ListTodo size={18} /> Add Task
+            </button>
+            <button 
+              onClick={() => setActiveTab('video')}
+              style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: activeTab === 'video' ? 'var(--current-accent)' : 'rgba(255,255,255,0.05)', color: activeTab === 'video' ? '#000' : 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 'bold' }}
+            >
+              <Video size={18} /> Add Video
+            </button>
+          </div>
+
+          <form onSubmit={handleAddItem} className="flex-col gap-4">
+            <input 
+              type="text" 
+              placeholder={activeTab === 'task' ? "Task Description" : "Video URL (https://...)"}
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              style={{ width: '100%', padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+              required
             />
             
             <div style={{ display: 'flex', gap: '12px' }}>
+              <select 
+                value={selectedTopic}
+                onChange={(e) => setSelectedTopic(e.target.value)}
+                style={{ flex: 1, padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none', appearance: 'none' }}
+              >
+                <option value="required">Under Required Topic</option>
+                <option value="optional">Under Optional Topic</option>
+              </select>
+
               <div style={{ flex: 1, position: 'relative' }}>
                 <Clock size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-muted)' }} />
                 <select 
-                  value={taskDuration}
-                  onChange={(e) => setTaskDuration(e.target.value)}
+                  value={itemDuration}
+                  onChange={(e) => setItemDuration(e.target.value)}
                   style={{ width: '100%', padding: '12px 12px 12px 36px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none', appearance: 'none' }}
                 >
                   <option value="30m">30 Minutes</option>
@@ -181,76 +257,87 @@ export default function CalendarView({ trackerData, updateTrackerData }) {
                   <option value="2h">2 Hours</option>
                 </select>
               </div>
-              
-              <div style={{ flex: 2, position: 'relative' }}>
-                <LinkIcon size={16} style={{ position: 'absolute', left: '12px', top: '14px', color: 'var(--text-muted)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Video URL (Optional)"
-                  value={taskLink}
-                  onChange={(e) => setTaskLink(e.target.value)}
-                  style={{ width: '100%', padding: '12px 12px 12px 36px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none' }}
-                />
-              </div>
             </div>
 
             <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', marginTop: '8px' }}>
-              <PlusCircle size={20} /> Add Tasks
+              <PlusCircle size={20} /> Add {activeTab === 'task' ? 'Task' : 'Video'}
             </button>
           </form>
         </div>
-      </div>
 
-      {/* Task List for Selected Day */}
-      <div className="glass-panel animate-fade-in" style={{ padding: '24px', animationDelay: '0.1s' }}>
-        <div className="flex-row justify-between items-center" style={{ marginBottom: '24px' }}>
-          <h2 className="text-h2">Schedule for {format(selectedDate, 'MMM do')}</h2>
-          <div className="text-muted">{tasksForDay.length} Tasks</div>
-        </div>
-
-        {tasksForDay.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-            No tasks scheduled for this day yet.<br />Use the form to add your learning targets.
-          </div>
-        ) : (
-          <div className="flex-col gap-4">
-            {tasksForDay.map(task => (
-              <div key={task.id} className="glass-panel" style={{ padding: '16px', borderLeft: task.completed ? '4px solid var(--accent-revision)' : (task.isOptional ? '4px solid var(--text-muted)' : '4px solid var(--accent-gate)') }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <input 
-                    type="checkbox" 
-                    className="custom-checkbox" 
-                    checked={task.completed}
-                    onChange={() => toggleTask(task.id)}
-                    style={{ marginTop: '4px' }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '1.1rem', fontWeight: '500', textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'var(--text-muted)' : 'var(--text-main)' }}>
-                          {task.text}
-                        </span>
-                        {task.isOptional && (
-                          <span style={{ fontSize: '0.7rem', padding: '2px 6px', background: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: 'var(--text-muted)' }}>Optional</span>
-                        )}
+        {/* TASK LIST RENDER */}
+        <div className="glass-panel" style={{ padding: '24px' }}>
+          <h2 className="text-h2" style={{ marginBottom: '24px' }}>Today's Execution</h2>
+          
+          {tasksForDay.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+              No tasks added yet. Define your topics and add items!
+            </div>
+          ) : (
+            <div className="flex-col gap-6">
+              
+              {/* REQUIRED TOPIC TASKS */}
+              {dayData.topics?.required && (
+                <div>
+                  <h4 style={{ color: 'var(--accent-coding)', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--border-glass)' }}>
+                    {dayData.topics.required} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Required)</span>
+                  </h4>
+                  <div className="flex-col gap-3">
+                    {requiredTasks.length === 0 ? <p className="text-muted" style={{ fontSize: '0.85rem' }}>No tasks added under this topic.</p> : null}
+                    {requiredTasks.map(task => (
+                      <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', opacity: task.completed ? 0.6 : 1 }}>
+                        <input type="checkbox" className="custom-checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} style={{ marginTop: '4px' }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'var(--text-muted)' : 'var(--text-main)' }}>
+                              {task.type === 'task' ? task.text : <a href={task.link} target="_blank" rel="noreferrer" style={{ color: 'var(--current-accent)' }}>🔗 Watch Lecture Video</a>}
+                            </span>
+                            <button onClick={() => removeTask(task.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
+                          </div>
+                          <div style={{ display: 'flex', gap: '16px', marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {task.duration}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{task.type === 'video' ? <Video size={12} /> : <ListTodo size={12} />} {task.type === 'video' ? 'Video' : 'Task'}</span>
+                          </div>
+                        </div>
                       </div>
-                      <button onClick={() => removeTask(task.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
-                    </div>
-                    
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {task.duration}</span>
-                      {task.link && (
-                        <a href={task.link} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent-coding)', textDecoration: 'none' }}>
-                          <LinkIcon size={14} /> Watch Lecture
-                        </a>
-                      )}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+
+              {/* OPTIONAL TOPIC TASKS */}
+              {dayData.topics?.optional && (
+                <div>
+                  <h4 style={{ color: 'var(--accent-revision)', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid var(--border-glass)' }}>
+                    {dayData.topics.optional} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(Optional)</span>
+                  </h4>
+                  <div className="flex-col gap-3">
+                    {optionalTasks.length === 0 ? <p className="text-muted" style={{ fontSize: '0.85rem' }}>No tasks added under this topic.</p> : null}
+                    {optionalTasks.map(task => (
+                      <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', opacity: task.completed ? 0.6 : 1 }}>
+                        <input type="checkbox" className="custom-checkbox" checked={task.completed} onChange={() => toggleTask(task.id)} style={{ marginTop: '4px' }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'var(--text-muted)' : 'var(--text-main)' }}>
+                              {task.type === 'task' ? task.text : <a href={task.link} target="_blank" rel="noreferrer" style={{ color: 'var(--current-accent)' }}>🔗 Watch Lecture Video</a>}
+                            </span>
+                            <button onClick={() => removeTask(task.id)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
+                          </div>
+                          <div style={{ display: 'flex', gap: '16px', marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={12} /> {task.duration}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{task.type === 'video' ? <Video size={12} /> : <ListTodo size={12} />} {task.type === 'video' ? 'Video' : 'Task'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

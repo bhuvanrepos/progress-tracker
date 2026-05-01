@@ -43,7 +43,7 @@ export default function DashboardLayout() {
         
         const loadedData = {};
         snapshot.forEach(doc => {
-          loadedData[doc.id] = doc.data().tasks || [];
+          loadedData[doc.id] = doc.data() || { tasks: [] };
         });
         
         setTrackerData(loadedData);
@@ -58,15 +58,15 @@ export default function DashboardLayout() {
   }, []);
 
   // 2. Function to Update State AND Firebase simultaneously
-  const updateTrackerData = async (dateStr, tasks) => {
+  const updateTrackerData = async (dateStr, payload) => {
     // Optimistic UI update (feels instant to the user)
-    setTrackerData(prev => ({ ...prev, [dateStr]: tasks }));
+    setTrackerData(prev => ({ ...prev, [dateStr]: payload }));
 
     // Save to Firebase Cloud
     if (user) {
       try {
         const dayDocRef = doc(db, 'users', user.uid, 'days', dateStr);
-        await setDoc(dayDocRef, { tasks }, { merge: true });
+        await setDoc(dayDocRef, payload, { merge: true });
       } catch (error) {
         console.error("Error saving tasks to cloud:", error);
       }
