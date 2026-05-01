@@ -153,50 +153,62 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
   const optionalTasks = tasksForDay.filter(t => t.topic === 'optional');
 
   // Hybrid Duration Input Component
-  const DurationInput = ({ value, onChange, placeholder }) => (
-    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-      <div style={{ position: 'relative', flex: 1 }}>
-        <Clock size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
-        <input 
-          type="text" 
-          placeholder={placeholder || "00h00m00s"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ width: '100%', padding: '14px 14px 14px 40px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.95rem' }}
-          required
-        />
-      </div>
-      <div style={{ position: 'relative', width: '60px' }}>
-        <select 
-          onChange={(e) => {
-            const presets = { '30mins': '00h30m00s', '45mins': '00h45m00s', '1hr': '01h00m00s', '2hrs': '02h00m00s' };
-            if(e.target.value) onChange(presets[e.target.value]);
-            e.target.value = ''; 
-          }}
-          style={{ width: '100%', height: '100%', appearance: 'none', background: 'var(--current-accent)', border: 'none', borderRadius: '8px', color: 'transparent', cursor: 'pointer', outline: 'none', zIndex: 2, position: 'absolute', opacity: 0 }}
-        >
-          <option value=""></option>
-          <option value="30mins">30 Mins</option>
-          <option value="45mins">45 Mins</option>
-          <option value="1hr">1 Hour</option>
-          <option value="2hrs">2 Hours</option>
-        </select>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--current-accent)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 1, color: '#000' }}>
-          <ChevronDown size={20} />
+  const DurationInput = ({ value, onChange, placeholder }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div style={{ display: 'flex', gap: '8px', width: '100%', position: 'relative' }}>
+        <div style={{ position: 'relative', flex: 1 }}>
+          <Clock size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+          <input 
+            type="text" 
+            placeholder={placeholder || "00h00m00s"}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            style={{ width: '100%', padding: '14px 14px 14px 40px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.95rem' }}
+            required
+          />
+        </div>
+        <div style={{ position: 'relative', width: '60px' }}>
+          <button type="button" onClick={() => setOpen(!open)} style={{ width: '100%', height: '100%', background: 'var(--current-accent)', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#000', transition: 'all 0.2s' }}>
+            <ChevronDown size={20} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+          </button>
+          
+          {open && (
+            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#1a1f2e', border: '1px solid var(--border-glass)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 50, width: '150px' }}>
+              {[
+                { label: '30 Mins', val: '00h30m00s' },
+                { label: '45 Mins', val: '00h45m00s' },
+                { label: '1 Hour', val: '01h00m00s' },
+                { label: '2 Hours', val: '02h00m00s' }
+              ].map(opt => (
+                <div 
+                  key={opt.val}
+                  onClick={() => { onChange(opt.val); setOpen(false); }}
+                  style={{ padding: '12px 14px', cursor: 'pointer', color: '#fff', borderBottom: '1px solid var(--border-glass)', background: 'transparent', transition: 'background 0.2s', fontSize: '0.9rem' }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(6,182,212,0.15)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                  <Clock size={14} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle', color: 'var(--text-muted)' }} />
+                  <span style={{ verticalAlign: 'middle' }}>{opt.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
       {/* GLOBAL TOAST ALERTS */}
       <div style={{
-        position: 'fixed', top: toast.show ? '24px' : '-100px', left: '50%', transform: 'translateX(-50%)',
+        position: 'fixed', top: toast.show ? '24px' : '-50px', left: '50%', transform: 'translateX(-50%)',
         background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.95)' : 'rgba(16, 185, 129, 0.95)',
         color: '#fff', padding: '16px 32px', borderRadius: '12px', zIndex: 10000, fontWeight: 'bold',
         display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-        transition: 'top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)', backdropFilter: 'blur(10px)'
+        transition: 'all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)', backdropFilter: 'blur(10px)',
+        opacity: toast.show ? 1 : 0, pointerEvents: toast.show ? 'auto' : 'none'
       }}>
         {toast.type === 'error' ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
         {toast.message}
@@ -225,8 +237,8 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
           <div className="glass-panel animate-fade-in" style={{ padding: '40px', textAlign: 'center', maxWidth: '400px' }}>
             <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
             <h2 className="text-h2" style={{ marginBottom: '16px' }}>Sign in to Save Data</h2>
-            <p className="text-muted" style={{ marginBottom: '32px' }}>
-              hey user welcome to dasboard if you want to accesss features and save data please sign in
+            <p className="text-muted" style={{ marginBottom: '32px', fontSize: '1.05rem', lineHeight: '1.6' }}>
+              Hey there! Welcome to the dashboard. If you want to access features and save your data, please sign in.
             </p>
             <button 
               onClick={() => { handleLogin(); setShowAuthModal(false); }} 
