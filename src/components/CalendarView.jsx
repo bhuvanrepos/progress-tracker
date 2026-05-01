@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, getDaysInMonth, addDays, getDay } from 'date-fns';
 import { PlusCircle, Link as LinkIcon, Clock, Video, ListTodo, Save, CheckCircle2, ChevronDown, Trash2, AlertTriangle } from 'lucide-react';
+import ClockPicker from './ClockPicker';
 
 export default function CalendarView({ trackerData, updateTrackerData, user, handleLogin }) {
   const may2026 = new Date('2026-05-01T00:00:00');
@@ -152,9 +153,10 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
   const requiredTasks = tasksForDay.filter(t => t.topic === 'required');
   const optionalTasks = tasksForDay.filter(t => t.topic === 'optional');
 
-  // Segmented Duration Input Component
+  // Interactive Clock Duration Input Component
   const DurationInput = ({ value, onChange }) => {
-    const [open, setOpen] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState(false);
+    const [clockOpen, setClockOpen] = useState(false);
     
     // Parse value (e.g. '01h30m00s')
     let hr = '00', min = '00', sec = '00';
@@ -163,70 +165,71 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
       hr = match[1]; min = match[2]; sec = match[3];
     }
 
-    const updateSegment = (type, val) => {
-      let v = parseInt(val) || 0;
-      if (type === 'hr') v = Math.min(99, Math.max(0, v));
-      if (type === 'min' || type === 'sec') v = Math.min(59, Math.max(0, v));
-      
-      const pad = (n) => n.toString().padStart(2, '0');
-      let newHr = type === 'hr' ? pad(v) : hr;
-      let newMin = type === 'min' ? pad(v) : min;
-      let newSec = type === 'sec' ? pad(v) : sec;
-      
-      onChange(`${newHr}h${newMin}m${newSec}s`);
-    };
-
     return (
-      <div style={{ display: 'flex', gap: '12px', width: '100%', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)', flex: 1 }}>
-          <Clock size={16} style={{ color: 'var(--text-muted)', marginRight: '8px' }} />
-          
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <input type="number" min="0" max="99" value={hr} onChange={e => updateSegment('hr', e.target.value)} className="segmented-time-input" />
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>HH</span>
-          </div>
-          <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 'bold', paddingBottom: '16px' }}>:</span>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <input type="number" min="0" max="59" value={min} onChange={e => updateSegment('min', e.target.value)} className="segmented-time-input" />
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>MM</span>
-          </div>
-          <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 'bold', paddingBottom: '16px' }}>:</span>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <input type="number" min="0" max="59" value={sec} onChange={e => updateSegment('sec', e.target.value)} className="segmented-time-input" />
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>SS</span>
-          </div>
-        </div>
-
-        <div style={{ position: 'relative', width: '50px', height: '100%' }}>
-          <button type="button" onClick={() => setOpen(!open)} style={{ width: '100%', height: '100%', minHeight: '64px', background: 'var(--current-accent)', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#000', transition: 'all 0.2s' }}>
-            <ChevronDown size={20} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
-          </button>
-          
-          {open && (
-            <div style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: '8px', background: '#1a1f2e', border: '1px solid var(--border-glass)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 -8px 24px rgba(0,0,0,0.5)', zIndex: 50, width: '140px' }}>
-              {[
-                { label: '30 Mins', val: '00h30m00s' },
-                { label: '45 Mins', val: '00h45m00s' },
-                { label: '1 Hour', val: '01h00m00s' },
-                { label: '2 Hours', val: '02h00m00s' }
-              ].map(opt => (
-                <div 
-                  key={opt.val}
-                  onClick={() => { onChange(opt.val); setOpen(false); }}
-                  style={{ padding: '12px 14px', cursor: 'pointer', color: '#fff', borderBottom: '1px solid var(--border-glass)', background: 'transparent', transition: 'background 0.2s', fontSize: '0.9rem' }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(6,182,212,0.15)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                >
-                  <Clock size={14} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle', color: 'var(--text-muted)' }} />
-                  <span style={{ verticalAlign: 'middle' }}>{opt.label}</span>
-                </div>
-              ))}
+      <>
+        <div style={{ display: 'flex', gap: '12px', width: '100%', alignItems: 'center' }}>
+          <div 
+            onClick={() => setClockOpen(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)', flex: 1, cursor: 'pointer', transition: 'background 0.2s' }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(6,182,212,0.1)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.2)'}
+          >
+            <Clock size={16} style={{ color: 'var(--current-accent, #06b6d4)', marginRight: '8px' }} />
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <span style={{ fontSize: '1.2rem', color: '#fff', fontWeight: '500' }}>{hr}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>HH</span>
             </div>
-          )}
+            <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 'bold', paddingBottom: '16px' }}>:</span>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <span style={{ fontSize: '1.2rem', color: '#fff', fontWeight: '500' }}>{min}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>MM</span>
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 'bold', paddingBottom: '16px' }}>:</span>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <span style={{ fontSize: '1.2rem', color: '#fff', fontWeight: '500' }}>{sec}</span>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>SS</span>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', width: '50px', height: '100%' }}>
+            <button type="button" onClick={() => setOpenDropdown(!openDropdown)} style={{ width: '100%', height: '100%', minHeight: '64px', background: 'var(--current-accent)', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#000', transition: 'all 0.2s' }}>
+              <ChevronDown size={20} style={{ transform: openDropdown ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+            </button>
+            
+            {openDropdown && (
+              <div style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: '8px', background: '#1a1f2e', border: '1px solid var(--border-glass)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 -8px 24px rgba(0,0,0,0.5)', zIndex: 50, width: '140px' }}>
+                {[
+                  { label: '30 Mins', val: '00h30m00s' },
+                  { label: '45 Mins', val: '00h45m00s' },
+                  { label: '1 Hour', val: '01h00m00s' },
+                  { label: '2 Hours', val: '02h00m00s' }
+                ].map(opt => (
+                  <div 
+                    key={opt.val}
+                    onClick={() => { onChange(opt.val); setOpenDropdown(false); }}
+                    style={{ padding: '12px 14px', cursor: 'pointer', color: '#fff', borderBottom: '1px solid var(--border-glass)', background: 'transparent', transition: 'background 0.2s', fontSize: '0.9rem' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(6,182,212,0.15)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <Clock size={14} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle', color: 'var(--text-muted)' }} />
+                    <span style={{ verticalAlign: 'middle' }}>{opt.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+        
+        <ClockPicker 
+          isOpen={clockOpen} 
+          onClose={() => setClockOpen(false)} 
+          initialValue={value} 
+          onComplete={onChange} 
+        />
+      </>
     );
   };
 
