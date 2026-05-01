@@ -45,8 +45,6 @@ export default function Settings() {
 
   const handleLogout = async () => {
     await signOut(auth);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    localStorage.removeItem(`attendance_${today}`);
     window.location.reload();
   };
 

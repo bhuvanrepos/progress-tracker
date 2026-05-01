@@ -48,21 +48,7 @@ export default function DashboardLayout() {
         
         setTrackerData(loadedData);
 
-        // Sync local attendance to cloud
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const localAttendance = localStorage.getItem(`attendance_${today}`);
-        const attendanceRef = doc(db, 'users', currentUser.uid, 'attendance', today);
-        
-        if (localAttendance) {
-          // Push local mood to cloud
-          await setDoc(attendanceRef, { mood: localAttendance, date: today }, { merge: true });
-        } else {
-          // Pull cloud mood to local (for cross-device sync)
-          const attSnap = await getDoc(attendanceRef);
-          if (attSnap.exists() && attSnap.data().mood) {
-            localStorage.setItem(`attendance_${today}`, attSnap.data().mood);
-          }
-        }
+        // Mood logic completely removed as per user request
       } else {
         // Fallback to empty if logged out
         setTrackerData({});
@@ -97,8 +83,6 @@ export default function DashboardLayout() {
 
   const handleLogout = async () => {
     await signOut(auth);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    localStorage.removeItem(`attendance_${today}`);
     window.location.reload();
   };
 
