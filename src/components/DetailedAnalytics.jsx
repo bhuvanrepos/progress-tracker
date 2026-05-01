@@ -29,7 +29,7 @@ export default function DetailedAnalytics({ trackerData }) {
 
       // Streak Logic (Only evaluate up to 'today' or days with tasks)
       if (isBefore(day, today) || isSameDay(day, today)) {
-        if (total > 0 && completedCount > 0) {
+        if (total > 0) {
           currentAttendance++;
           maxAttendance = Math.max(maxAttendance, currentAttendance);
         } else {
