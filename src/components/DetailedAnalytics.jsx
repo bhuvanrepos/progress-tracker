@@ -8,9 +8,6 @@ export default function DetailedAnalytics({ trackerData }) {
   const endDate = new Date('2026-06-01T00:00:00');
   const today = new Date();
 
-  const [tooltipState, setTooltipState] = useState({ active: false, payload: null, label: '', x: 0, y: 0 });
-  const timeoutRef = useRef(null);
-
   // Generate stats and chart data
   const { chartData, streaks, tableData } = useMemo(() => {
     const days = eachDayOfInterval({ start: startDate, end: endDate });
@@ -87,33 +84,78 @@ export default function DetailedAnalytics({ trackerData }) {
     };
   }, [trackerData]);
 
-  const handleMouseMove = (state) => {
-    if (state && state.activePayload && state.activePayload.length) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      
-      // Calculate clamped X position so tooltip doesn't fall off screen
-      let safeX = (state.activeCoordinate?.x || 0) + 20;
-      if (safeX > 500) { safeX = safeX - 320; } // Show on left if too far right
+  const CustomTooltip = ({ active, payload, label }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const [cachedPayload, setCachedPayload] = useState(null);
+    const [cachedLabel, setCachedLabel] = useState(null);
+    const hoverTimeoutRef = useRef(null);
 
-      setTooltipState({
-        active: true,
-        payload: state.activePayload[0].payload,
-        label: state.activeLabel,
-        x: safeX,
-        y: Math.max((state.activeCoordinate?.y || 0) - 100, 20)
-      });
-    }
-  };
+    React.useEffect(() => {
+      if (active && payload && payload.length) {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        setIsVisible(true);
+        setCachedPayload(payload);
+        setCachedLabel(label);
+      } else {
+        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+          setIsVisible(false);
+        }, 2000);
+      }
+      return () => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); };
+    }, [active, payload, label]);
 
-  const handleMouseLeave = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      setTooltipState(prev => ({ ...prev, active: false }));
-    }, 2000);
-  };
+    if (!isVisible || !cachedPayload || !cachedPayload.length) return null;
 
-  const handleTooltipEnter = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    const data = cachedPayload[0].payload;
+    return (
+      <div 
+        onMouseEnter={() => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); }}
+        onMouseLeave={() => {
+          if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+          hoverTimeoutRef.current = setTimeout(() => setIsVisible(false), 2000);
+        }}
+        className="animate-fade-in"
+        style={{ 
+          padding: '16px', background: 'rgba(10, 14, 20, 0.98)', border: '1px solid var(--border-glass)', borderRadius: '12px', boxShadow: '0 12px 40px rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', width: '300px', maxHeight: '350px', overflowY: 'auto', pointerEvents: 'auto'
+        }}
+      >
+        <p style={{ margin: '0 0 12px 0', fontWeight: 'bold', fontSize: '1.2rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px', position: 'sticky', top: '-16px', background: 'rgba(10, 14, 20, 0.98)', zIndex: 2, paddingTop: '16px' }}>{cachedLabel}</p>
+        <p style={{ color: '#10b981', margin: '0 0 12px 0', fontWeight: '500' }}>Completion: {data.completion}%</p>
+        
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '6px' }}>Topics:</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Required: {data.topics?.required || 'None'}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Optional: {data.topics?.optional || 'None'}</div>
+        </div>
+
+        {data.allTasks?.length > 0 ? (
+          <div>
+            <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '8px' }}>Tasks Completed:</div>
+            {data.allTasks.map(t => (
+              <div key={t.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: t.originalDate ? '3px solid #3b82f6' : '3px solid #10b981' }}>
+                {t.type === 'video' ? (
+                  <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Video Title: {t.text}</div>
+                ) : (
+                  <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Task: {t.text}</div>
+                )}
+                
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Topic: {t.topic || 'N/A'}</div>
+                
+                {t.type === 'video' && t.link && (
+                  <div style={{ color: 'var(--current-accent)', fontSize: '0.85rem', marginBottom: '2px', wordBreak: 'break-all' }}>Video URL: <a href={t.link} target="_blank" rel="noreferrer" style={{color:'inherit'}}>{t.link}</a></div>
+                )}
+                
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Time Taken: {t.actualDuration || t.duration}</div>
+                <div style={{ color: '#eab308', fontSize: '0.85rem' }}>Status: Completed</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No tasks completed this day.</div>
+        )}
+      </div>
+    );
   };
 
   const CustomBlockerDot = (props) => {
@@ -151,84 +193,32 @@ export default function DetailedAnalytics({ trackerData }) {
       <div className="glass-panel" style={{ padding: '24px', position: 'relative' }}>
         <h3 className="text-h3" style={{ marginBottom: '16px' }}>Daily Completion (%) & Blockers</h3>
         
-        {/* Custom Stable Tooltip Overlay */}
-        {tooltipState.active && tooltipState.payload && (
-          <div 
-            onMouseEnter={handleTooltipEnter}
-            onMouseLeave={handleMouseLeave}
-            className="animate-fade-in"
-            style={{ 
-              position: 'absolute', 
-              top: tooltipState.y + 'px', 
-              left: tooltipState.x + 'px', 
-              pointerEvents: 'auto',
-              zIndex: 100,
-              padding: '16px', background: 'rgba(10, 14, 20, 0.98)', border: '1px solid var(--border-glass)', borderRadius: '12px', boxShadow: '0 12px 40px rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', width: '300px', maxHeight: '350px', overflowY: 'auto'
-            }}
-          >
-            <p style={{ margin: '0 0 12px 0', fontWeight: 'bold', fontSize: '1.2rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px', position: 'sticky', top: '-16px', background: 'rgba(10, 14, 20, 0.98)', zIndex: 2, paddingTop: '16px' }}>{tooltipState.label}</p>
-            <p style={{ color: '#10b981', margin: '0 0 12px 0', fontWeight: '500' }}>Completion: {tooltipState.payload.completion}%</p>
-            
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '6px' }}>Topics:</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Required: {tooltipState.payload.topics?.required || 'None'}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Optional: {tooltipState.payload.topics?.optional || 'None'}</div>
-            </div>
-
-            {tooltipState.payload.allTasks?.length > 0 ? (
-              <div>
-                <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '8px' }}>Tasks Completed:</div>
-                {tooltipState.payload.allTasks.map(t => (
-                  <div key={t.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: t.originalDate ? '3px solid #3b82f6' : '3px solid #10b981' }}>
-                    {t.type === 'video' ? (
-                      <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Video Title: {t.text}</div>
-                    ) : (
-                      <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Task: {t.text}</div>
-                    )}
-                    
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Topic: {t.topic || 'N/A'}</div>
-                    
-                    {t.type === 'video' && t.link && (
-                      <div style={{ color: 'var(--current-accent)', fontSize: '0.85rem', marginBottom: '2px', wordBreak: 'break-all' }}>Video URL: <a href={t.link} target="_blank" rel="noreferrer" style={{color:'inherit'}}>{t.link}</a></div>
-                    )}
-                    
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Time Taken: {t.actualDuration || t.duration}</div>
-                    <div style={{ color: '#eab308', fontSize: '0.85rem' }}>Status: Completed</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No tasks completed this day.</div>
-            )}
-          </div>
-        )}
-
         <div style={{ width: '100%', height: '320px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart 
               data={chartData} 
               margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              onClick={handleMouseMove}
             >
-            <defs>
-              <linearGradient id="colorPercent" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.5}/>
-                <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-            <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
-            
-            {/* Empty native tooltip just to keep the cursor line active */}
-            <Tooltip content={() => null} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-            
-            <Area type="monotone" dataKey="completion" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorPercent)" />
-            <Line type="monotone" dataKey="blockerY" stroke="none" dot={<CustomBlockerDot />} activeDot={false} isAnimationActive={false} />
-          </ComposedChart>
-        </ResponsiveContainer>
+              <defs>
+                <linearGradient id="colorPercent" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.5}/>
+                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+              
+              <Tooltip 
+                content={<CustomTooltip />} 
+                cursor={{ fill: 'rgba(255,255,255,0.05)' }} 
+                wrapperStyle={{ visibility: 'visible', pointerEvents: 'auto', zIndex: 100 }}
+              />
+              
+              <Area type="monotone" dataKey="completion" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorPercent)" />
+              <Line type="monotone" dataKey="blockerY" stroke="none" dot={<CustomBlockerDot />} activeDot={false} isAnimationActive={false} />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
