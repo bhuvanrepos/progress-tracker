@@ -126,7 +126,7 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
     updateTrackerData(dateStr, { ...dayData, tasks: updated });
     setCompletingTaskId(null);
     setActualDuration('');
-    showToastMsg(`${textName} completed successfully!`, 'success');
+    showToastMsg(`Successfully completed task: ${textName}!`, 'success');
   };
 
   const confirmDeleteTask = () => {
@@ -152,29 +152,60 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
   const requiredTasks = tasksForDay.filter(t => t.topic === 'required');
   const optionalTasks = tasksForDay.filter(t => t.topic === 'optional');
 
-  // Hybrid Duration Input Component
-  const DurationInput = ({ value, onChange, placeholder }) => {
+  // Segmented Duration Input Component
+  const DurationInput = ({ value, onChange }) => {
     const [open, setOpen] = useState(false);
+    
+    // Parse value (e.g. '01h30m00s')
+    let hr = '00', min = '00', sec = '00';
+    const match = value?.match(/^(\d{2})h(\d{2})m(\d{2})s$/);
+    if (match) {
+      hr = match[1]; min = match[2]; sec = match[3];
+    }
+
+    const updateSegment = (type, val) => {
+      let v = parseInt(val) || 0;
+      if (type === 'hr') v = Math.min(99, Math.max(0, v));
+      if (type === 'min' || type === 'sec') v = Math.min(59, Math.max(0, v));
+      
+      const pad = (n) => n.toString().padStart(2, '0');
+      let newHr = type === 'hr' ? pad(v) : hr;
+      let newMin = type === 'min' ? pad(v) : min;
+      let newSec = type === 'sec' ? pad(v) : sec;
+      
+      onChange(`${newHr}h${newMin}m${newSec}s`);
+    };
+
     return (
-      <div style={{ display: 'flex', gap: '8px', width: '100%', position: 'relative' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <Clock size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
-          <input 
-            type="text" 
-            placeholder={placeholder || "00h00m00s"}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            style={{ width: '100%', padding: '14px 14px 14px 40px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-glass)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.95rem' }}
-            required
-          />
+      <div style={{ display: 'flex', gap: '12px', width: '100%', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)', flex: 1 }}>
+          <Clock size={16} style={{ color: 'var(--text-muted)', marginRight: '8px' }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input type="number" min="0" max="99" value={hr} onChange={e => updateSegment('hr', e.target.value)} className="segmented-time-input" />
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>HH</span>
+          </div>
+          <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 'bold', paddingBottom: '16px' }}>:</span>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input type="number" min="0" max="59" value={min} onChange={e => updateSegment('min', e.target.value)} className="segmented-time-input" />
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>MM</span>
+          </div>
+          <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 'bold', paddingBottom: '16px' }}>:</span>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <input type="number" min="0" max="59" value={sec} onChange={e => updateSegment('sec', e.target.value)} className="segmented-time-input" />
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: 'bold' }}>SS</span>
+          </div>
         </div>
-        <div style={{ position: 'relative', width: '60px' }}>
-          <button type="button" onClick={() => setOpen(!open)} style={{ width: '100%', height: '100%', background: 'var(--current-accent)', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#000', transition: 'all 0.2s' }}>
+
+        <div style={{ position: 'relative', width: '50px', height: '100%' }}>
+          <button type="button" onClick={() => setOpen(!open)} style={{ width: '100%', height: '100%', minHeight: '64px', background: 'var(--current-accent)', border: 'none', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#000', transition: 'all 0.2s' }}>
             <ChevronDown size={20} style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
           </button>
           
           {open && (
-            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', background: '#1a1f2e', border: '1px solid var(--border-glass)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 50, width: '150px' }}>
+            <div style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: '8px', background: '#1a1f2e', border: '1px solid var(--border-glass)', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 -8px 24px rgba(0,0,0,0.5)', zIndex: 50, width: '140px' }}>
               {[
                 { label: '30 Mins', val: '00h30m00s' },
                 { label: '45 Mins', val: '00h45m00s' },
@@ -203,11 +234,11 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
     <>
       {/* GLOBAL TOAST ALERTS */}
       <div style={{
-        position: 'fixed', top: toast.show ? '24px' : '-50px', left: '50%', transform: 'translateX(-50%)',
+        position: 'fixed', top: toast.show ? '24px' : '-80px', left: '50%', transform: toast.show ? 'translateX(-50%) scale(1)' : 'translateX(-50%) scale(0.9)',
         background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.95)' : 'rgba(16, 185, 129, 0.95)',
         color: '#fff', padding: '16px 32px', borderRadius: '12px', zIndex: 10000, fontWeight: 'bold',
-        display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-        transition: 'all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)', backdropFilter: 'blur(10px)',
+        display: 'flex', alignItems: 'center', gap: '12px', boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+        transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)', backdropFilter: 'blur(10px)',
         opacity: toast.show ? 1 : 0, pointerEvents: toast.show ? 'auto' : 'none'
       }}>
         {toast.type === 'error' ? <AlertTriangle size={20} /> : <CheckCircle2 size={20} />}
