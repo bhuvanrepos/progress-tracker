@@ -9,7 +9,23 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
   
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const dayData = trackerData[dateStr] || { mood: null, topics: { required: '', optional: '' }, tasks: [] };
-  const tasksForDay = dayData.tasks || [];
+  const baseTasks = dayData.tasks || [];
+  
+  // Rollover Engine
+  let rolloverTasks = [];
+  Object.entries(trackerData).forEach(([dKey, data]) => {
+    // Only strictly before selectedDate
+    if (new Date(dKey) < selectedDate) {
+      data.tasks?.forEach(t => {
+        // Include if it's NOT completed yet OR if it WAS completed exactly ON this selected date
+        if (!t.completed || t.completedDate === dateStr) {
+          rolloverTasks.push({ ...t, originalDate: dKey, isRollover: true });
+        }
+      });
+    }
+  });
+
+  const tasksForDay = [...baseTasks, ...rolloverTasks];
   
   // Topic Setup State
   const [topicReq, setTopicReq] = useState('');
@@ -100,10 +116,11 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
         duration: itemDuration || '00h00m00s',
         topic: selectedTopic,
         completed: false,
-        actualDuration: null
+        actualDuration: null,
+        originalDate: dateStr
       };
 
-      updateTrackerData(dateStr, { ...dayData, tasks: [...tasksForDay, newItem] });
+      updateTrackerData(dateStr, { ...dayData, tasks: [...baseTasks, newItem] });
       setItemName('');
       setVideoUrl('');
       setItemDuration('');
@@ -112,9 +129,12 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
 
   const triggerToggleTask = (task) => {
     requireAuth(() => {
+      const targetDate = task.originalDate || dateStr;
+      const targetDayData = trackerData[targetDate] || { tasks: [] };
+
       if (task.completed) {
-        const updated = tasksForDay.map(t => t.id === task.id ? { ...t, completed: false, actualDuration: null } : t);
-        updateTrackerData(dateStr, { ...dayData, tasks: updated });
+        const updated = targetDayData.tasks.map(t => t.id === task.id ? { ...t, completed: false, actualDuration: null, completedDate: null } : t);
+        updateTrackerData(targetDate, { ...targetDayData, tasks: updated });
       } else {
         setCompletingTaskId(task.id);
         setActualDuration(task.duration);
@@ -123,8 +143,13 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
   };
 
   const finalizeCompletion = (taskId, textName) => {
-    const updated = tasksForDay.map(t => t.id === taskId ? { ...t, completed: true, actualDuration: actualDuration || t.duration } : t);
-    updateTrackerData(dateStr, { ...dayData, tasks: updated });
+    const task = tasksForDay.find(t => t.id === taskId);
+    const targetDate = task?.originalDate || dateStr;
+    const targetDayData = trackerData[targetDate] || { tasks: [] };
+
+    const updated = targetDayData.tasks.map(t => t.id === taskId ? { ...t, completed: true, actualDuration: actualDuration || t.duration, completedDate: dateStr } : t);
+    
+    updateTrackerData(targetDate, { ...targetDayData, tasks: updated });
     setCompletingTaskId(null);
     setActualDuration('');
     showToastMsg(`Successfully completed task: ${textName}!`, 'success');
@@ -133,8 +158,12 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
   const confirmDeleteTask = () => {
     requireAuth(() => {
       if (!taskToDelete) return;
-      const updated = tasksForDay.filter(t => t.id !== taskToDelete);
-      updateTrackerData(dateStr, { ...dayData, tasks: updated });
+      const task = tasksForDay.find(t => t.id === taskToDelete);
+      const targetDate = task?.originalDate || dateStr;
+      const targetDayData = trackerData[targetDate] || { tasks: [] };
+
+      const updated = targetDayData.tasks.filter(t => t.id !== taskToDelete);
+      updateTrackerData(targetDate, { ...targetDayData, tasks: updated });
       setTaskToDelete(null);
     });
   };
@@ -550,6 +579,11 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
                                     <span style={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'var(--text-muted)' : 'var(--text-main)', fontSize: '1.05rem', fontWeight: '500' }}>
                                       {task.text}
                                     </span>
+                                    {task.isRollover && (
+                                      <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px' }}>
+                                        ⚠️ Carried over from {format(new Date(task.originalDate), 'MMM do')}
+                                      </span>
+                                    )}
                                     {task.type === 'video' && task.link && (
                                       <a href={task.link} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--current-accent)', textDecoration: 'none', fontSize: '0.85rem', marginTop: '4px' }}>
                                         <LinkIcon size={12} /> Watch Video
@@ -613,6 +647,11 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
                                     <span style={{ textDecoration: task.completed ? 'line-through' : 'none', color: task.completed ? 'var(--text-muted)' : 'var(--text-main)', fontSize: '1.05rem', fontWeight: '500' }}>
                                       {task.text}
                                     </span>
+                                    {task.isRollover && (
+                                      <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px', alignSelf: 'flex-start', marginTop: '4px' }}>
+                                        ⚠️ Carried over from {format(new Date(task.originalDate), 'MMM do')}
+                                      </span>
+                                    )}
                                     {task.type === 'video' && task.link && (
                                       <a href={task.link} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--current-accent)', textDecoration: 'none', fontSize: '0.85rem', marginTop: '4px' }}>
                                         <LinkIcon size={12} /> Watch Video
