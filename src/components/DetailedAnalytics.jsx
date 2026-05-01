@@ -84,78 +84,91 @@ export default function DetailedAnalytics({ trackerData }) {
     };
   }, [trackerData]);
 
+  const [lockedTooltip, setLockedTooltip] = useState(null);
+
+  const handleChartClick = (state) => {
+    if (state && state.activePayload && state.activePayload.length) {
+      let safeX = (state.activeCoordinate?.x || 0) + 20;
+      if (safeX > 500) { safeX = safeX - 320; }
+      setLockedTooltip({
+        payload: state.activePayload[0].payload,
+        label: state.activeLabel,
+        x: safeX,
+        y: Math.max((state.activeCoordinate?.y || 0) - 100, 20)
+      });
+    } else {
+      setLockedTooltip(null);
+    }
+  };
+
   const CustomTooltip = ({ active, payload, label }) => {
-    const [isVisible, setIsVisible] = useState(false);
-    const [cachedPayload, setCachedPayload] = useState(null);
-    const [cachedLabel, setCachedLabel] = useState(null);
-    const hoverTimeoutRef = useRef(null);
-
-    React.useEffect(() => {
-      if (active && payload && payload.length) {
-        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-        setIsVisible(true);
-        setCachedPayload(payload);
-        setCachedLabel(label);
-      } else {
-        if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-        hoverTimeoutRef.current = setTimeout(() => {
-          setIsVisible(false);
-        }, 2000);
-      }
-      return () => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); };
-    }, [active, payload, label]);
-
-    if (!isVisible || !cachedPayload || !cachedPayload.length) return null;
-
-    const data = cachedPayload[0].payload;
-    return (
-      <div 
-        onMouseEnter={() => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); }}
-        onMouseLeave={() => {
-          if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-          hoverTimeoutRef.current = setTimeout(() => setIsVisible(false), 2000);
-        }}
-        className="animate-fade-in"
-        style={{ 
-          padding: '16px', background: 'rgba(10, 14, 20, 0.98)', border: '1px solid var(--border-glass)', borderRadius: '12px', boxShadow: '0 12px 40px rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', width: '300px', maxHeight: '350px', overflowY: 'auto', pointerEvents: 'auto'
-        }}
-      >
-        <p style={{ margin: '0 0 12px 0', fontWeight: 'bold', fontSize: '1.2rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px', position: 'sticky', top: '-16px', background: 'rgba(10, 14, 20, 0.98)', zIndex: 2, paddingTop: '16px' }}>{cachedLabel}</p>
-        <p style={{ color: '#10b981', margin: '0 0 12px 0', fontWeight: '500' }}>Completion: {data.completion}%</p>
-        
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '6px' }}>Topics:</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Required: {data.topics?.required || 'None'}</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Optional: {data.topics?.optional || 'None'}</div>
-        </div>
-
-        {data.allTasks?.length > 0 ? (
-          <div>
-            <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '8px' }}>Tasks Completed:</div>
-            {data.allTasks.map(t => (
-              <div key={t.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: t.originalDate ? '3px solid #3b82f6' : '3px solid #10b981' }}>
-                {t.type === 'video' ? (
-                  <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Video Title: {t.text}</div>
-                ) : (
-                  <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Task: {t.text}</div>
-                )}
-                
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Topic: {t.topic || 'N/A'}</div>
-                
-                {t.type === 'video' && t.link && (
-                  <div style={{ color: 'var(--current-accent)', fontSize: '0.85rem', marginBottom: '2px', wordBreak: 'break-all' }}>Video URL: <a href={t.link} target="_blank" rel="noreferrer" style={{color:'inherit'}}>{t.link}</a></div>
-                )}
-                
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Time Taken: {t.actualDuration || t.duration}</div>
-                <div style={{ color: '#eab308', fontSize: '0.85rem' }}>Status: Completed</div>
-              </div>
-            ))}
+    
+    // 1. LOCKED STATE (Click to lock & scroll)
+    if (lockedTooltip) {
+      const data = lockedTooltip.payload;
+      return (
+        <div 
+          className="animate-fade-in"
+          style={{ 
+            padding: '16px', background: 'rgba(10, 14, 20, 0.98)', border: '1px solid var(--accent-coding)', borderRadius: '12px', boxShadow: '0 12px 40px rgba(6, 182, 212, 0.3)', backdropFilter: 'blur(10px)', width: '300px', maxHeight: '350px', overflowY: 'auto', pointerEvents: 'auto'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px', marginBottom: '12px', position: 'sticky', top: '-16px', background: 'rgba(10, 14, 20, 0.98)', zIndex: 2, paddingTop: '16px' }}>
+            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--accent-coding)' }}>{lockedTooltip.label} <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>(Locked)</span></p>
+            <button onClick={() => setLockedTooltip(null)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
           </div>
-        ) : (
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No tasks completed this day.</div>
-        )}
-      </div>
-    );
+          <p style={{ color: '#10b981', margin: '0 0 12px 0', fontWeight: '500' }}>Completion: {data.completion}%</p>
+          
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '6px' }}>Topics:</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Required: {data.topics?.required || 'None'}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Optional: {data.topics?.optional || 'None'}</div>
+          </div>
+
+          {data.allTasks?.length > 0 ? (
+            <div>
+              <div style={{ color: 'var(--text-main)', fontWeight: 'bold', marginBottom: '8px' }}>Tasks Completed:</div>
+              {data.allTasks.map(t => (
+                <div key={t.id} style={{ background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: t.originalDate ? '3px solid #3b82f6' : '3px solid #10b981' }}>
+                  {t.type === 'video' ? (
+                    <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Video Title: {t.text}</div>
+                  ) : (
+                    <div style={{ color: 'var(--text-main)', fontWeight: '500', marginBottom: '4px' }}>Task: {t.text}</div>
+                  )}
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Topic: {t.topic || 'N/A'}</div>
+                  {t.type === 'video' && t.link && (
+                    <div style={{ color: 'var(--current-accent)', fontSize: '0.85rem', marginBottom: '2px', wordBreak: 'break-all' }}>Video URL: <a href={t.link} target="_blank" rel="noreferrer" style={{color:'inherit'}}>{t.link}</a></div>
+                  )}
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '2px' }}>Time Taken: {t.actualDuration || t.duration}</div>
+                  <div style={{ color: '#eab308', fontSize: '0.85rem' }}>Status: Completed</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>No tasks completed this day.</div>
+          )}
+        </div>
+      );
+    }
+
+    // 2. NORMAL HOVER STATE (Preview only)
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div 
+          className="animate-fade-in"
+          style={{ 
+            padding: '16px', background: 'rgba(10, 14, 20, 0.95)', border: '1px solid var(--border-glass)', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', backdropFilter: 'blur(10px)', width: '300px', pointerEvents: 'none'
+          }}
+        >
+          <p style={{ margin: '0 0 12px 0', fontWeight: 'bold', fontSize: '1.2rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '8px' }}>{label} <span style={{fontSize:'0.75rem', color:'var(--current-accent)', display:'block', marginTop:'4px', fontWeight:'normal'}}>Click to lock & scroll</span></p>
+          <p style={{ color: '#10b981', margin: '0 0 4px 0', fontWeight: '500' }}>Completion: {data.completion}%</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '8px 0 0 0' }}>Tasks Completed: {data.allTasks?.length || 0}</p>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const CustomBlockerDot = (props) => {
@@ -198,6 +211,7 @@ export default function DetailedAnalytics({ trackerData }) {
             <ComposedChart 
               data={chartData} 
               margin={{ top: 20, right: 0, left: -20, bottom: 0 }}
+              onClick={handleChartClick}
             >
               <defs>
                 <linearGradient id="colorPercent" x1="0" y1="0" x2="0" y2="1">
@@ -212,7 +226,8 @@ export default function DetailedAnalytics({ trackerData }) {
               <Tooltip 
                 content={<CustomTooltip />} 
                 cursor={{ fill: 'rgba(255,255,255,0.05)' }} 
-                wrapperStyle={{ visibility: 'visible', pointerEvents: 'auto', zIndex: 100 }}
+                wrapperStyle={{ visibility: 'visible', pointerEvents: lockedTooltip ? 'auto' : 'none', zIndex: 100 }}
+                {...(lockedTooltip ? { position: { x: lockedTooltip.x, y: lockedTooltip.y } } : {})}
               />
               
               <Area type="monotone" dataKey="completion" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorPercent)" />
