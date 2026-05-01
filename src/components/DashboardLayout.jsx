@@ -98,7 +98,7 @@ export default function DashboardLayout() {
         return <SettingsView />;
       case 'dashboard':
       default:
-        return <CalendarView trackerData={trackerData} updateTrackerData={updateTrackerData} />;
+        return <CalendarView trackerData={trackerData} updateTrackerData={updateTrackerData} user={user} handleLogin={handleLogin} />;
     }
   };
 
