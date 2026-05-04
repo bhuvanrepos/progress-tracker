@@ -9,7 +9,9 @@ import {
   CalendarDays,
   BarChart3,
   ShieldAlert,
-  Menu
+  Menu,
+  Activity,
+  Star
 } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { auth, db, provider } from '../firebase';
@@ -20,6 +22,8 @@ import CalendarView from './CalendarView';
 import DetailedAnalytics from './DetailedAnalytics';
 import Blockers from './Blockers';
 import SettingsView from './Settings';
+import CheckActivities from './CheckActivities';
+import ImportantNotes from './ImportantNotes';
 
 const TARGET_DATE = new Date('2026-06-01T00:00:00');
 
@@ -93,6 +97,10 @@ export default function DashboardLayout() {
         return <DetailedAnalytics trackerData={trackerData} />;
       case 'blockers':
         return <Blockers trackerData={trackerData} updateTrackerData={updateTrackerData} currentDate={currentDate} />;
+      case 'activities':
+        return <CheckActivities trackerData={trackerData} />;
+      case 'important':
+        return <ImportantNotes trackerData={trackerData} updateTrackerData={updateTrackerData} currentDate={currentDate} />;
       case 'settings':
         return <SettingsView />;
       case 'dashboard':
@@ -148,6 +156,22 @@ export default function DashboardLayout() {
             </button>
             <button 
               className="btn"
+              onClick={() => { setActiveView('activities'); setIsSidebarOpen(false); }}
+              style={{ background: activeView === 'activities' ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderColor: activeView === 'activities' ? 'var(--current-accent)' : 'var(--border-glass)' }}
+            >
+              <Activity size={20} />
+              Activity Log
+            </button>
+            <button 
+              className="btn"
+              onClick={() => { setActiveView('important'); setIsSidebarOpen(false); }}
+              style={{ background: activeView === 'important' ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderColor: activeView === 'important' ? 'var(--current-accent)' : 'var(--border-glass)' }}
+            >
+              <Star size={20} />
+              Important Notes
+            </button>
+            <button 
+              className="btn"
               onClick={() => { setActiveView('settings'); setIsSidebarOpen(false); }}
               style={{ background: activeView === 'settings' ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderColor: activeView === 'settings' ? 'var(--current-accent)' : 'var(--border-glass)' }}
             >
@@ -190,6 +214,8 @@ export default function DashboardLayout() {
                 {activeView === 'dashboard' && 'Daily Execution'}
                 {activeView === 'analytics' && 'Performance Analytics'}
                 {activeView === 'blockers' && 'Pending Tasks'}
+                {activeView === 'activities' && 'Activity Log'}
+                {activeView === 'important' && 'Important Notes'}
                 {activeView === 'settings' && 'Account Settings'}
               </h1>
               <p className="text-muted">{format(currentDate, 'EEEE, MMMM do, yyyy')}</p>
