@@ -179,6 +179,15 @@ body {
   color: var(--text-main);
 }
 
+.form-input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.8;
+}
+.form-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .w-full {
   width: 100%;
 }
