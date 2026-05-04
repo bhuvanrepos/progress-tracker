@@ -47,7 +47,7 @@ export default function DetailedAnalytics({ trackerData }) {
       // Calculate Blockers (Tasks created before 'day' but completed ON 'day')
       const blockersCompletedToday = [];
       Object.entries(trackerData).forEach(([dateKey, data]) => {
-        if (new Date(dateKey) < day && dateKey !== dateStr) {
+        if (dateKey < dateStr) {
           data.tasks?.forEach(t => {
             if (t.completed && t.completedDate === dateStr) {
               blockersCompletedToday.push({ ...t, originalDate: dateKey });

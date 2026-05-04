@@ -16,7 +16,7 @@ export default function CalendarView({ trackerData, updateTrackerData, user, han
   let rolloverTasks = [];
   Object.entries(trackerData).forEach(([dKey, data]) => {
     // Only strictly before selectedDate
-    if (new Date(dKey) < selectedDate) {
+    if (dKey < dateStr) {
       data.tasks?.forEach(t => {
         // Include if it's NOT completed yet OR if it WAS completed exactly ON this selected date
         if (!t.completed || t.completedDate === dateStr) {
